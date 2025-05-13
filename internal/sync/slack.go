@@ -2,8 +2,9 @@ package sync
 
 import (
 	"fmt"
-	"github.com/slack-go/slack"
 	"strings"
+
+	"github.com/slack-go/slack"
 )
 
 type slackClient struct {
@@ -35,6 +36,9 @@ func newSlackClient(token string) (*slackClient, error) {
 func (s *slackClient) createOrGetUserGroup(name string) (*slack.UserGroup, error) {
 	group := s.findUserGroupByName(name)
 	if group != nil {
+		if !group.DateDelete.Time().IsZero() {
+			s.Client.EnableUserGroup(name)
+		}
 		return group, nil
 	}
 
@@ -77,4 +81,14 @@ func (s *slackClient) findUserGroupByName(name string) *slack.UserGroup {
 		}
 	}
 	return nil
+}
+
+func (s *slackClient) findUserGroupByPrefix(prefix string) []*slack.UserGroup {
+	res := []*slack.UserGroup{}
+	for _, g := range s.userGroups {
+		if strings.HasPrefix(g.Name, prefix) {
+			res = append(res, &g)
+		}
+	}
+	return res
 }

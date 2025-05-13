@@ -6,6 +6,7 @@ import (
 
 	"github.com/kevholditch/go-pagerduty-slack-sync/internal/compare"
 	"github.com/sirupsen/logrus"
+	"github.com/slack-go/slack"
 )
 
 // Schedules does the sync
@@ -57,6 +58,7 @@ func Schedules(config *Config) error {
 		return emails, nil
 	}
 
+	managedGroupNames := map[string]struct{}{}
 	for _, schedule := range config.Schedules {
 		logrus.Infof("checking slack group: %s", schedule.CurrentOnCallGroupName)
 
@@ -84,6 +86,26 @@ func Schedules(config *Config) error {
 		if err != nil {
 			logrus.Errorf("failed to update slack group %s: %v", schedule.AllOnCallGroupName, err)
 			continue
+		}
+
+		managedGroupNames[schedule.CurrentOnCallGroupName] = struct{}{}
+		managedGroupNames[schedule.AllOnCallGroupName] = struct{}{}
+	}
+
+	if len(managedGroupNames) == 0 {
+		return nil
+	}
+
+	currentGroups := []*slack.UserGroup{}
+	currentGroups = append(currentGroups, s.findUserGroupByPrefix(CurrentOncallGroupPrefix)...)
+	currentGroups = append(currentGroups, s.findUserGroupByPrefix(AllOncallGroupPrefix)...)
+	for _, g := range currentGroups {
+		if _, ok := managedGroupNames[g.Name]; !ok {
+			_, err := s.Client.DisableUserGroup(g.Name)
+			if err != nil {
+				logrus.Errorf("failed to disable unmanaged user group %s, %v", g.Name, err)
+				continue
+			}
 		}
 	}
 

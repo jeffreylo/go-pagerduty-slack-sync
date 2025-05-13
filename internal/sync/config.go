@@ -17,6 +17,9 @@ const (
 	runIntervalDefault     = 60
 )
 
+const CurrentOncallGroupPrefix = "current-oncall-"
+const AllOncallGroupPrefix = "all-oncall-"
+
 // Config is used to configure application
 // PagerDutyToken - token used to connect to pagerduty API
 // SlackToken - token used to connect to Slack API
@@ -82,8 +85,8 @@ func NewConfigFromEnv() (*Config, error) {
 }
 
 func appendSchedule(schedules []Schedule, scheduleID, teamName string) []Schedule {
-	currentGroupName := fmt.Sprintf("current-oncall-%s", teamName)
-	allGroupName := fmt.Sprintf("all-oncall-%ss", teamName)
+	currentGroupName := fmt.Sprintf("%s%s", CurrentOncallGroupPrefix, teamName)
+	allGroupName := fmt.Sprintf("%s%ss", AllOncallGroupPrefix, teamName)
 	newScheduleList := make([]Schedule, len(schedules))
 	updated := false
 
